@@ -1,0 +1,219 @@
+#============================================================================
+#  Name:
+#    whiteboard.mak
+#
+#  Description:
+#    Makefile to build the $(TARGET) downloadable module.
+#
+#   The following targets are available in this makefile:
+#
+#     all           - make .elf and .mod image files (default)
+#     clean         - delete object directory and image files
+#
+#   The above targets can be made with the following command:
+#
+#     nmake /f whiteboard.mak [target]
+#	  make -f whiteboard.mak [target]
+#
+#  Assumptions:
+#    1. cygwin is installed on your machine and is in the path.  
+#	 2. GCCHOMEPATH points to location where GNU tools are installed.
+#
+#  Notes:
+#    1. You might need to modify the GCCHOMEPATH, GCCBINPATH, ELF2MODTOOLPATH 
+#		and LIBDIRS variable below.
+#    2. While building the application using this make file, the following
+#		warnings may be received. They can be safely ignored:
+#		"Warning: _divsi3.o does not support interworking, whereas <Your App>.elf does not"
+#		"Warning: _dvmd_tls.o does not support interworking, whereas <Your App>.elf does not"
+#
+#        Copyright © 2000-2003 QUALCOMM Incorporated.
+#               All Rights Reserved.
+#            QUALCOMM Proprietary/GTDR
+#
+#----------------------------------------------------------------------------
+#-----------------------------------------------------------------------
+# Target File Name and Type Definitions
+#   (you'll need to specify a target name; i.e. what you want the
+#    program to be called)
+#-----------------------------------------------------------------------
+ifndef TARGET
+TARGET = spit 
+endif
+
+EXETYPE = elf
+BINARY  = bin
+MODULE = mod
+
+ifndef BREW_VER
+BREW_VER = 1.1
+endif
+
+#-----------------------------------------------------------
+# Additional objects apart from $(TARGET).o 
+#-----------------------------------------------------------
+ADD_OBJS = GCCResolver.o
+
+#-----------------------------------------------------------------------
+# Set the object files that we care about
+# (if your program has more than one source file, you'll need to add
+# the rest of them to this list (changing the extension to .o))
+#-----------------------------------------------------------------------
+APP_OBJS = AEEModGen.o AEEAppGen.o $(ADD_OBJS) $(TARGET).o
+
+#-----------------------------------------------------------------------
+# Target compile time symbol definitions
+#
+# Tells the SDK source stuffs that we're building a dynamic app.
+#-----------------------------------------------------------------------
+DEFINES = -DDYNAMIC_APP
+
+#-----------------------------------------------------------------------
+# Software tool and environment definitions
+#   (GCCHOMEPATH needs to be set to the location of your gcc cross-compiler
+#    and binutils.  ELF2MODTOOLPATH needs to set to the location of of
+#	BREWelf2mod.exe)
+#-----------------------------------------------------------------------
+ifndef GCCHOMEPATH 
+GCCHOMEPATH  =  c:/cygwin
+endif
+
+GCCBINPATH = $(GCCHOMEPATH)/bin
+ELF2MODTOOLPATH = $(GCCHOMEPATH)
+
+#-----------------------------------------------------------
+# Fix the path here to location of AEEAppGen.c and AEEModGen.c
+#-----------------------------------------------------------
+AEESRCPATH = $(GCCHOMEPATH)/$(BREW_VER)/src
+
+#-----------------------------------------------------------
+# Fix the path here to location of BREW header files
+#-----------------------------------------------------------
+AEEINCPATH = $(GCCHOMEPATH)/$(BREW_VER)/inc
+
+GCC = $(GCCHOMEPATH)\opt\ecos\gnutools\arm-elf\bin\arm-elf-gcc.exe
+LD = $(GCCHOMEPATH)\opt\ecos\gnutools\arm-elf\bin\arm-elf-ld.exe
+ELF2MODTOOL = $(ELF2MODTOOLPATH)/BREWelf2mod.exe
+
+#-----------------------------------------------------------------------
+# Compiler optimization options
+#   -O0 disables compiler optimizations.  Other options probably work as
+#     well.  Set to taste.
+#-----------------------------------------------------------------------
+OPT	=	-O2
+
+#-----------------------------------------------------------------------
+# Compiler code generation options
+#   Add $(TARG) to the CODE line if you're building a Thumb binary (at
+#   the moment, this doesn't work).
+#-----------------------------------------------------------------------
+END	=	-mbig-endian
+TARG =	-mthumb
+CODE =	$(END) -fshort-enums -fno-builtin
+
+#-----------------------------------------------------------------------
+# Include file search path options
+#   (change this to point to where the BREW SDK headers are located)
+#-----------------------------------------------------------------------
+INC	=	-I$(AEEINCPATH) -I$(GCCHOMEPATH)\lib\gcc-lib\arm-elf\include -I$(GCCHOMEPATH)\arm-elf\include
+
+#-----------------------------------------------------------------------
+# Library search path options. It points the location of libgcc.a
+#-----------------------------------------------------------------------
+  LIBDIRS = -L$(GCCHOMEPATH)\lib\gcc-lib\be
+
+#-----------------------------------------------------------------------
+# Nothing below here (except for the dependencies at the bottom of the
+#  file) should need to be changed for a reasonably normal compilation.
+#-----------------------------------------------------------------------
+
+#-----------------------------------------------------------------------
+# Processor architecture options
+# Sets the designated target processor for this applet.
+# Currently, all BREW phones use the ARM 7t chip
+#-----------------------------------------------------------------------
+CPU	=	-mcpu=arm7tdmi
+
+#-----------------------------------------------------------------------
+# ARM Procedure Call Standard (APCS) options
+# -fPIC             sets posititon independent code.  Other option: -fpic
+# -mthumb-interwork enables switching between ARM and Thumb code
+# -mapcs-frame      runs on systems with the frame ptr. specified in the
+# 			APCS
+#-----------------------------------------------------------------------
+ROPI	=
+INTRWK	=	-mthumb-interwork
+APCS	=	-mapcs-frame $(ROPI) $(INTRWK)
+
+#-----------------------------------------------------------------------
+# Compiler output options
+# -c sets object file output only
+#-----------------------------------------------------------------------
+OUT	=	-c
+
+#-----------------------------------------------------------------------
+# Compiler/assembler debug Options
+#   -g is the standard flag to leave debugging information in the
+#   object files.
+#-----------------------------------------------------------------------
+#DBG	=	-g
+DBG	=	-DNDEBUG
+
+#-----------------------------------------------------------------------
+# Compiler flag definitions
+#-----------------------------------------------------------------------
+CFLAGS0 =	$(OUT) $(DEFINES) $(CPU) $(APCS) $(CODE) $(DBG)
+CFLAGS =	$(CFLAGS0) $(INC) $(OPT)
+
+#-----------------------------------------------------------------------
+# Linker Options
+# -o sets the output filename
+#-----------------------------------------------------------------------
+LINK_CMD  = -Ttext 0 --emit-relocs -entry AEEMod_Load -o
+LIBS      = -lgcc
+
+#-----------------------------------------------------------------------
+# Linker flag definitions
+#-----------------------------------------------------------------------
+LDFLAGS =	$(LIBDIRS)
+
+#-----------------------------------------------------------------------
+# Default target
+#-----------------------------------------------------------------------
+default: $(TARGET).$(MODULE)
+
+#-----------------------------------------------------------------------
+# All target
+#-----------------------------------------------------------------------
+all: $(TARGET).$(MODULE)
+
+#-----------------------------------------------------------------------
+# Targets for making the actual binary
+#-----------------------------------------------------------------------
+$(TARGET).$(MODULE) :   $(TARGET).$(EXETYPE)
+	$(ELF2MODTOOL) $(TARGET).$(EXETYPE) $(TARGET).$(MODULE)
+
+$(TARGET).$(EXETYPE) :  $(APP_OBJS)
+	$(LD) $(LINK_CMD) $(TARGET).$(EXETYPE) $(LDFLAGS) \
+	$(APP_OBJS) $(LIBS) $(LINK_ORDER) -EB
+
+#-----------------------------------------------------------------------
+# Cleanup
+#-----------------------------------------------------------------------
+clean:
+	rm -f $(APP_OBJS) $(TARGET).$(EXETYPE) $(TARGET).$(MODULE)
+
+#-----------------------------------------------------------------------
+# Object File Dependencies
+#   You may well want to add more dependencies here.
+#-----------------------------------------------------------------------
+$(TARGET).o:	$(TARGET).c
+
+AEEAppGen.o:
+	$(GCC) $(CFLAGS) -o AEEAppGen.o $(AEESRCPATH)/AEEAppGen.c
+AEEModGen.o:
+	$(GCC) $(CFLAGS) -o AEEModGen.o $(AEESRCPATH)/AEEModGen.c
+GCCResolver.o:
+	$(GCC) $(CFLAGS) -o GCCResolver.o $(AEESRCPATH)/GCCResolver.c
+.c.o:
+	$(GCC) -c $(CFLAGS) -o $@ $<

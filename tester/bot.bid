@@ -1,0 +1,6 @@
+#ifndef ROBO_BID
+#define ROBO_BID
+
+#define AEECLSID_ROBO    	0x0102d72e
+
+#endif //ROBO_BID
