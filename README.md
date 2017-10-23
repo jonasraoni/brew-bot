@@ -13,14 +13,14 @@ The project is composed of two applications:
 
 ## How to use
 1. Extract the BREW APIs from the C headers by using the [ctags](https://github.com/universal-ctags/ctags) project. A text output like the snippet below will be generated, save it to a file.  
-<code>
-IImage	c:\brew\inc\AEE.h	263;"	t  
-AEECallback	c:\brew\inc\AEE.h	281;"	t  
-EVT_APP_START	c:\brew\inc\AEE.h	346;"	d  
-EVT_APP_STOP	c:\brew\inc\AEE.h	347;"	d  
-EVT_APP_SUSPEND	c:\brew\inc\AEE.h	348;"	d  
+```
+IImage	c:\brew\inc\AEE.h	263;"	t
+AEECallback	c:\brew\inc\AEE.h	281;"	t
+EVT_APP_START	c:\brew\inc\AEE.h	346;"	d
+EVT_APP_STOP	c:\brew\inc\AEE.h	347;"	d
+EVT_APP_SUSPEND	c:\brew\inc\AEE.h	348;"	d
 AECHAR	c:\brew\inc\AEE.h	75;"	t
-</code>
+```
 
 2. Call the [matcher](matcher) application passing as first argument the ctags, the next arguments must be source code paths of your application, wildcards like *.c are accepted. It will generate a text file containing all the APIs that are being used by your application.
 
